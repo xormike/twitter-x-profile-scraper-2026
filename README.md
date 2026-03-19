@@ -10,7 +10,9 @@ The script opens Chrome, navigates day-by-day through X's search (`from:user sin
 >
 > For profile scraping, scraping for daily posted tweets via the search query was the best working option for me. With direct scraping from the main profile you will run into limits to loaded tweets.
 >
-> **It is not guaranteed that this script can scrape all tweets reliably, because the Twitter search function is buggy as hell.**
+> **It is not guaranteed that this script can scrape all tweets reliably, because the Twitter search function is very buggy.**
+>
+> This project is still in developement so there can be occuring difficulties.
 
 ## Requirements
 
