@@ -155,6 +155,13 @@ def parse_args():
         help=f"Stop scrolling after N rounds with no new tweets (default: {DEFAULT_IDLE_ROUNDS})",
     )
 
+    parser.add_argument(
+        "--replies",
+        action="store_true",
+        default=False,
+        help="Include replies in search results (default: replies are excluded)",
+    )
+
     args = parser.parse_args()
 
     # Validate dates
@@ -320,6 +327,7 @@ async def main():
     print(f"\n🐦 Tweet URL Scraper")
     print(f"   User:    @{args.user}")
     print(f"   Zeitraum: {args.until} → {args.since}")
+    print(f"   Replies: {"eingeschlossen" if args.replies else "ausgeschlossen (default)"}")
     print(f"   Output:  {args.output}\n")
 
     # --- Chrome starten oder prüfen ob bereits läuft ---
@@ -489,10 +497,11 @@ async def main():
 
             print(f"[{day_idx+1}/{total_days}] 📅 {since}")
 
+            replies_filter = "" if args.replies else "%20-filter%3Areplies"
             search_url = (
                 f"https://x.com/search?q=from%3A{args.user}"
                 f"%20since%3A{since}%20until%3A{until}"
-                f"%20-filter%3Areplies"
+                f"{replies_filter}"
                 f"&f=live&src=typed_query"
             )
             navigate_to_url(win_id, search_url)

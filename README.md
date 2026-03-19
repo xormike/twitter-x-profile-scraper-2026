@@ -6,6 +6,12 @@ Scrapes tweet URLs from any X/Twitter profile for a given date range — using C
 
 The script opens Chrome, navigates day-by-day through X's search (`from:user since:… until:…`), intercepts the internal `SearchTimeline` API responses via CDP, and extracts tweet IDs. Results are saved as URLs to a text file.
 
+> **FYI:** xdotool simulates manual mouse scrolling — it is till now the best working option which I found to function properly. With that in mind, **it is not possible to do any other action while executing the script, while being on the same desktop session!**
+>
+> For profile scraping, scraping for daily posted tweets via the search query was the best working option for me. With direct scraping from the main profile you will run into limits to loaded tweets.
+>
+> **It is not guaranteed that this script can scrape all tweets reliably, because the Twitter search function is buggy as hell.**
+
 ## Requirements
 
 - **Linux** with a running X11 desktop session
@@ -59,6 +65,7 @@ python tweet_url_scraper.py --user elonmusk --since 2024-03-01 --until 2024-01-0
 | `--output` | `-o` | `tweet_urls.txt` | Output file path |
 | `--port` | `-p` | `9222` | Chrome remote debugging port |
 | `--no-launch` | | off | Don't auto-launch Chrome, use existing instance |
+| `--replies` | | off | Include replies in results (default: replies excluded) |
 | `--scroll-clicks` | | `8` | Mouse wheel clicks per scroll step |
 | `--scroll-wait` | | `2.5` | Seconds to wait after each scroll |
 | `--idle-rounds` | | `4` | Stop after N scrolls with no new tweets |
@@ -68,6 +75,9 @@ python tweet_url_scraper.py --user elonmusk --since 2024-03-01 --until 2024-01-0
 ```bash
 # Scrape January 2024, save to custom file
 python tweet_url_scraper.py -u naval -s 2024-01-31 -e 2024-01-01 -o naval_jan.txt
+
+# Include replies
+python tweet_url_scraper.py -u naval -s 2024-01-31 -e 2024-01-01 --replies
 
 # Use already running Chrome instance on custom port
 python tweet_url_scraper.py -u paulg -s 2024-06-01 -e 2024-05-01 --no-launch --port 9223
