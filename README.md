@@ -41,7 +41,7 @@ pip install websockets
 ## Installation
 
 ```bash
-git clone https://github.com/yourname/tweet-url-scraper.git
+git clone https://github.com/xormike/twitter-x-profile-scraper-2026.git
 cd tweet-url-scraper
 pip install websockets
 ```
