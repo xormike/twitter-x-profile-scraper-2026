@@ -51,7 +51,7 @@ pip install websockets
 ## Usage
 
 ```bash
-python tweet_url_scraper.py --user elonmusk --since 2024-03-01 --until 2024-01-01
+python3 tweet_url_scraper.py --user nvidia --since 2024-03-01 --until 2024-01-01
 ```
 
 > **Note:** `--since` is the **newer** date, `--until` is the **older** date.  
