@@ -55,28 +55,28 @@ def check_dependencies():
 
     if shutil.which("xdotool") is None:
         errors.append(
-            "  ✗ xdotool not found.\n"
-            "    Install with: sudo apt install xdotool"
+            "  ✗ xdotool nicht gefunden.\n"
+            "    Installation: sudo apt install xdotool"
         )
 
     chrome_bin = find_chrome()
     if chrome_bin is None:
         errors.append(
-            "  ✗ No Chrome/Chromium found.\n"
-            "    Install with: sudo apt install chromium-browser\n"
-            "    Or: https://www.google.com/chrome"
+            "  ✗ Kein Chrome/Chromium gefunden.\n"
+            "    Installation: sudo apt install chromium-browser\n"
+            "    Oder: https://www.google.com/chrome"
         )
 
     try:
         import websockets  # noqa: F401
     except ImportError:
         errors.append(
-            "  ✗ Python package 'websockets' missing.\n"
-            "    Install with: pip install websockets"
+            "  ✗ Python-Paket 'websockets' fehlt.\n"
+            "    Installation: pip install websockets"
         )
 
     if errors:
-        print("❌ Missing dependencies:\n")
+        print("❌ Fehlende Abhängigkeiten:\n")
         for e in errors:
             print(e)
         sys.exit(1)
@@ -168,17 +168,17 @@ def parse_args():
     try:
         date_since = datetime.strptime(args.since, "%Y-%m-%d")
     except ValueError:
-        parser.error(f"--since: invalid date '{args.since}' — format must be YYYY-MM-DD.")
+        parser.error(f"--since: ungültiges Datum '{args.since}' — Format muss YYYY-MM-DD sein.")
 
     try:
         date_until = datetime.strptime(args.until, "%Y-%m-%d")
     except ValueError:
-        parser.error(f"--until: invalid date '{args.until}' — format must be YYYY-MM-DD.")
+        parser.error(f"--until: ungültiges Datum '{args.until}' — Format muss YYYY-MM-DD sein.")
 
     if date_since < date_until:
         parser.error(
-            f"--since ({args.since}) must be equal to or more recent than --until ({args.until}).\n"
-            "  Note: --since is the newer start point, --until is the older end point."
+            f"--since ({args.since}) muss gleich oder neuer als --until ({args.until}) sein.\n"
+            "  Hinweis: --since ist der neuere Startpunkt, --until der ältere Endpunkt."
         )
 
     args.date_since = date_since
@@ -189,27 +189,19 @@ def parse_args():
 # ----------------- Chrome launch -----------------
 def launch_chrome(chrome_bin, port):
     """Launch Chrome with remote debugging enabled and return the process."""
-    print(f"🚀 Launching Chrome ({chrome_bin}) with --remote-debugging-port={port} ...")
-    import tempfile, os
-    user_data_dir = tempfile.mkdtemp(prefix="chrome-cdp-")
-    print(f"   Using temp profile: {user_data_dir}")
+    print(f"🚀 Starte Chrome ({chrome_bin}) mit --remote-debugging-port={port} ...")
     proc = subprocess.Popen(
         [
             chrome_bin,
             f"--remote-debugging-port={port}",
-            f"--user-data-dir={user_data_dir}",
             "--no-first-run",
             "--no-default-browser-check",
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
             "https://x.com",
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    print(f"   PID: {proc.pid} — waiting for CDP to become ready...")
-    print(f"   If this hangs, start Chrome manually and use --no-launch:")
-    print(f"   {chrome_bin} --remote-debugging-port={port} --no-sandbox https://x.com")
+    print(f"   PID: {proc.pid} — warte auf CDP-Bereitschaft...")
     return proc
 
 
@@ -334,69 +326,34 @@ async def main():
 
     print(f"\n🐦 Tweet URL Scraper")
     print(f"   User:    @{args.user}")
-    print(f"   Range:   {args.until} → {args.since}")
-    print(f"   Replies: {'included' if args.replies else 'excluded (default)'}")
+    print(f"   Zeitraum: {args.until} → {args.since}")
+    print(f"   Replies: {"eingeschlossen" if args.replies else "ausgeschlossen (default)"}")
     print(f"   Output:  {args.output}\n")
 
     # --- Chrome starten oder prüfen ob bereits läuft ---
     if args.no_launch:
-        print(f"⏳ Checking CDP on port {args.port} ...")
+        print(f"⏳ Prüfe CDP auf Port {args.port} ...")
         if not wait_for_cdp(cdp_url, timeout=5):
             print(
-                f"❌ No Chrome with CDP found on port {args.port}.\n"
-                f"   Start Chrome manually with:\n"
+                f"❌ Kein Chrome mit CDP auf Port {args.port} gefunden.\n"
+                f"   Starte Chrome manuell mit:\n"
                 f"   {chrome_bin} --remote-debugging-port={args.port} https://x.com"
             )
             sys.exit(1)
     else:
         # Prüfen ob CDP schon läuft (z.B. vom letzten Aufruf)
         if wait_for_cdp(cdp_url, timeout=2):
-            print(f"✅ Chrome with CDP already active on port {args.port}.")
+            print(f"✅ Chrome mit CDP bereits aktiv auf Port {args.port}.")
         else:
-            # Prüfen ob Chrome bereits ohne CDP läuft
-            existing = subprocess.run(
-                ["pgrep", "-f", "google-chrome|chromium"],
-                capture_output=True, text=True
-            )
-            if existing.stdout.strip():
-                print("⚠️  WARNING: Chrome is already running without remote debugging.")
-                print("   The script needs to kill all Chrome processes and restart")
-                print("   Chrome with --remote-debugging-port enabled.")
-                print()
-                try:
-                    confirm = input("   Type 'yes' to kill Chrome and continue, or press Enter to abort: ").strip().lower()
-                except EOFError:
-                    confirm = ""
-                if confirm != "yes":
-                    print("   Aborted. Start Chrome manually with:")
-                    print(f"   {chrome_bin} --remote-debugging-port={args.port} --no-sandbox https://x.com")
-                    print("   Then run this script with --no-launch.")
-                    sys.exit(0)
-                print("   Killing existing Chrome processes...")
-                subprocess.run(["pkill", "-f", "google-chrome"], capture_output=True)
-                subprocess.run(["pkill", "-f", "chromium"], capture_output=True)
-                time.sleep(2)
-                print("   Chrome processes terminated.")
-
             chrome_proc = launch_chrome(chrome_bin, args.port)
-            if not wait_for_cdp(cdp_url, timeout=45):
-                print("❌ Chrome launched but CDP did not respond within 45s.")
-                print("   Try starting Chrome manually and use --no-launch:")
-                print(f"   {chrome_bin} --remote-debugging-port={args.port} --no-sandbox https://x.com")
+            if not wait_for_cdp(cdp_url, timeout=30):
+                print("❌ Chrome gestartet, aber CDP antwortet nicht nach 30s.")
                 chrome_proc.terminate()
                 sys.exit(1)
-            print(f"✅ Chrome ready.")
-            print()
-            print("   💡 You should log in to X now for better results.")
-            print("      (Logged-in sessions load more tweets and avoid rate limits.)")
-            print()
-            try:
-                input("   Press Enter to continue once you are logged in... ")
-            except EOFError:
-                pass
+            print(f"✅ Chrome bereit.")
 
     # --- Window-ID für xdotool ---
-    print("🔍 Searching for Chrome window via xdotool...")
+    print("🔍 Suche Chrome-Fenster für xdotool...")
     win_id = None
     for attempt in range(15):
         win_id = get_chrome_window_id()
@@ -406,16 +363,16 @@ async def main():
 
     if not win_id:
         print(
-            "❌ Chrome window not found via xdotool.\n"
-            "   Make sure Chrome is visible on the desktop."
+            "❌ Chrome-Fenster nicht per xdotool gefunden.\n"
+            "   Stelle sicher dass Chrome sichtbar auf dem Desktop läuft."
         )
         if chrome_proc:
             chrome_proc.terminate()
         sys.exit(1)
-    print(f"🪟 Window found (ID: {win_id})")
+    print(f"🪟 Fenster gefunden (ID: {win_id})")
 
     # --- x.com Tab finden ---
-    print("⏳ Looking for x.com tab in CDP...")
+    print("⏳ Suche x.com Tab in CDP...")
     ws_url = None
     for attempt in range(30):
         ws_url, tab_url = get_tab(cdp_url, "x.com")
@@ -426,8 +383,8 @@ async def main():
 
     if not ws_url:
         print(
-            "❌ No x.com tab found.\n"
-            "   Open x.com manually in Chrome and restart the script."
+            "❌ Kein x.com Tab gefunden.\n"
+            "   Öffne x.com manuell in Chrome und starte das Skript erneut."
         )
         if chrome_proc:
             chrome_proc.terminate()
@@ -441,7 +398,7 @@ async def main():
             m = re.search(r'/status/(\d+)', line.strip())
             if m:
                 seen_ids.add(m.group(1))
-        print(f"📦 {len(seen_ids)} known URLs loaded from {args.output}")
+        print(f"📦 {len(seen_ids)} bereits bekannte URLs geladen aus {args.output}")
 
     # --- Tage-Liste aufbauen (neuestes zuerst) ---
     days = []
@@ -453,7 +410,7 @@ async def main():
     total_days  = len(days)
     total_found = 0
 
-    print(f"📅 {total_days} days to scrape\n")
+    print(f"📅 {total_days} Tage zu scrapen\n")
 
     # --- CDP WebSocket ---
     async with websockets.connect(ws_url, max_size=50 * 1024 * 1024) as ws:
@@ -471,7 +428,7 @@ async def main():
             }
         }))
         await ws.recv()
-        print(f"🎯 Fetch.enable active\n")
+        print(f"🎯 Fetch.enable aktiv\n")
 
         async def collect_responses(duration_sec):
             new_ids  = []
@@ -570,12 +527,12 @@ async def main():
 
                 if current_count == prev_count:
                     idle_rounds += 1
-                    status = f"no new ({idle_rounds}/{args.idle_rounds})"
+                    status = f"keine neuen ({idle_rounds}/{args.idle_rounds})"
                 else:
                     idle_rounds = 0
-                    status = f"+{current_count - prev_count} new"
+                    status = f"+{current_count - prev_count} neue"
 
-                print(f"   ⬇️  Scroll #{scroll_count:2d} | {status} | today: {current_count}")
+                print(f"   ⬇️  Scroll #{scroll_count:2d} | {status} | heute: {current_count}")
                 prev_count = current_count
 
                 if idle_rounds >= args.idle_rounds:
@@ -584,20 +541,20 @@ async def main():
             if day_ids:
                 saved = append_urls(day_ids, all_file)
                 total_found += len(saved)
-                print(f"   💾 {len(saved)} URLs saved | total: {total_found}")
+                print(f"   💾 {len(saved)} URLs gespeichert | gesamt: {total_found}")
             else:
-                print(f"   — No tweets found")
+                print(f"   — Keine Tweets gefunden")
 
         await ws.send(_json.dumps({"id": 3, "method": "Fetch.disable"}))
 
-    print(f"\n✅ Done.")
-    print(f"📊 {total_found} new URLs found across {total_days} days.")
+    print(f"\n✅ Fertig.")
+    print(f"📊 {total_found} neue URLs über {total_days} Tage gefunden.")
     if all_file.exists():
         total_in_file = sum(1 for line in all_file.read_text().splitlines() if line.strip())
-        print(f"📦 {args.output} now contains {total_in_file} URLs.")
+        print(f"📦 {args.output} enthält jetzt {total_in_file} URLs.")
 
     if chrome_proc:
-        print("🔒 Chrome left open — close it manually.")
+        print("🔒 Chrome wird offen gelassen (manuell schließen).")
 
 
 asyncio.run(main())
